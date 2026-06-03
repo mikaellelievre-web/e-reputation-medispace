@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reporting e-réputation – Medispace</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#fff;--bg2:#f5f5f5;--bg3:#eef2f7;--text:#111;--text2:#555;--text3:#888;--border:#ddd;--blue:#185FA5;--blue-light:#e6f1fb;--blue-text:#0c447c;--ok:#1D9E75;--ok-bg:#E1F5EE;--warn:#BA7517;--warn-bg:#FAEEDA;--bad:#A32D2D;--bad-bg:#FCEBEB}
+@media(prefers-color-scheme:dark){:root{--bg:#1a1a1a;--bg2:#232323;--bg3:#2a2d35;--text:#f0f0f0;--text2:#aaa;--text3:#777;--border:#333;--blue-light:#0c2040;--blue-text:#85b7eb}}
+body{font-family:system-ui,sans-serif;background:var(--bg3);color:var(--text);min-height:100vh}
+.wrapper{max-width:980px;margin:0 auto;padding:1.5rem 1rem}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px}
+.topbar h1{font-size:17px;font-weight:500;display:flex;align-items:center;gap:8px}
+.topbar-meta{font-size:12px;color:var(--text2);margin-top:2px}
+.btn{padding:6px 14px;font-size:12px;border-radius:7px;cursor:pointer;border:1px solid var(--border);background:var(--bg);color:var(--text2)}
+.btn:hover{background:var(--bg2)}
+.btn-primary{background:var(--blue-light);color:var(--blue-text);border-color:var(--blue)}
+.tabs{display:flex;gap:2px;flex-wrap:wrap;margin-bottom:1.25rem;border-bottom:1px solid var(--border)}
+.tab{padding:7px 14px;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;border:1px solid transparent;border-radius:7px 7px 0 0;background:none}
+.tab.active{color:var(--blue);border-color:var(--border);border-bottom:1px solid var(--bg);background:var(--bg);margin-bottom:-1px}
+.tab:hover:not(.active){background:var(--bg2)}
+.section{display:none}.section.active{display:block}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.25rem}
+.kpi{background:var(--bg);border-radius:8px;border:1px solid var(--border);padding:12px 14px}
+.kpi-label{font-size:11px;color:var(--text2);margin-bottom:4px}
+.kpi-val{font-size:22px;font-weight:500}
+.kpi-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:1rem}
+.card-title{font-size:13px;font-weight:500;color:var(--text2);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{text-align:left;padding:7px 9px;background:var(--bg2);color:var(--text2);font-weight:500;border-bottom:1px solid var(--border)}
+.tbl td{padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--bg2)}
+.tbl td[contenteditable=true]:focus{outline:2px solid var(--blue);border-radius:3px}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+.badge-ok{background:var(--ok-bg);color:var(--ok)}
+.badge-warn{background:var(--warn-bg);color:var(--warn)}
+.badge-bad{background:var(--bad-bg);color:var(--bad)}
+.period-sel{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;font-size:12px;color:var(--text2)}
+.period-sel select,select,input{font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text)}
+.del-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:15px}
+.del-btn:hover{color:var(--bad)}
+.action-row{display:grid;grid-template-columns:90px 1fr 1fr 90px 24px;gap:6px;align-items:center;padding:8px 10px;background:var(--bg2);border-radius:8px;font-size:12px}
+.action-row input{width:100%}
+.chart-wrap{position:relative;width:100%;height:220px;margin-top:8px}
+.leg{display:flex;gap:16px;font-size:12px;color:var(--text2);margin-top:8px}
+.leg-dot{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:4px}
+@media print{.btn,.del-btn,.period-sel button{display:none}.tabs{display:none}.section{display:block!important;page-break-inside:avoid}.wrapper{max-width:100%}}
+</style>
+</head>
+<body>
+<div class="wrapper">
+<div class="topbar">
+  <div>
+    <h1><i class="ti ti-shield-check" style="color:var(--blue)"></i>Reporting e-réputation — Medispace</h1>
+    <div class="topbar-meta">Périodicité : toutes les 3 semaines · Mis à jour le <span id="lastUpdate"></span></div>
+  </div>
+  <div style="display:flex;gap:6px">
+    <button class="btn" onclick="window.print()"><i class="ti ti-printer"></i> Imprimer</button>
+    <button class="btn btn-primary" onclick="exportCSV()"><i class="ti ti-download"></i> Exporter CSV</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('synthese',this)"><i class="ti ti-layout-dashboard"></i> Synthèse</button>
+  <button class="tab" onclick="showTab('google',this)"><i class="ti ti-brand-google"></i> Veille Google</button>
+  <button class="tab" onclick="showTab('geo',this)"><i class="ti ti-robot"></i> Veille GEO / IA</button>
+  <button class="tab" onclick="showTab('backlinks',this)"><i class="ti ti-link"></i> Backlinks</button>
+  <button class="tab" onclick="showTab('mentions',this)"><i class="ti ti-star"></i> Avis & Mentions</button>
+  <button class="tab" onclick="showTab('actions',this)"><i class="ti ti-list-check"></i> Actions correctives</button>
+</div>
+
+<div id="synthese" class="section active">
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-label">Risque global</div><div class="kpi-val" id="kpi-risque-val">—</div><div class="kpi-sub">e-réputation</div></div>
+    <div class="kpi"><div class="kpi-label">Articles détracteurs</div><div class="kpi-val" id="kpi-detract-val">—</div><div class="kpi-sub">page 1 Google</div></div>
+    <div class="kpi"><div class="kpi-label">Note GMB</div><div class="kpi-val" id="kpi-note-val">—</div><div class="kpi-sub">Google My Business</div></div>
+    <div class="kpi"><div class="kpi-label">Domaines référents</div><div class="kpi-val" id="kpi-bl-val">—</div><div class="kpi-sub">SE-Ranking</div></div>
+    <div class="kpi"><div class="kpi-label">Mentions IA</div><div class="kpi-val" id="kpi-ia-val">—</div><div class="kpi-sub">ChatGPT / Gemini…</div></div>
+  </div>
+  <div class="period-sel"><label>Période :</label><select id="periodeSelect" onchange="updateKpis()"></select></div>
+  <div class="card">
+    <div class="card-title"><i class="ti ti-chart-line"></i> Risque e-réputation par période</div>
+    <div class="chart-wrap"><canvas id="chartRisque" role="img" aria-label="Évolution risque e-réputation">Évolution du risque e-réputation par période.</canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><i class="ti ti-chart-bar"></i> Détracteurs vs. mentions positives</div>
+    <div class="chart-wrap"><canvas id="chartDetract" role="img" aria-label="Détracteurs vs positives">Comparaison articles détracteurs et mentions positives.</canvas></div>
+    <div class="leg"><span><span class="leg-dot" style="background:#F09595"></span>Détracteurs</span><span><span class="leg-dot" style="background:#9FE1CB"></span>Mentions positives</span></div>
+  </div>
+</div>
+
+<div id="google" class="section">
+  <div class="period-sel"><label>Période :</label><select id="googlePeriode" onchange="renderGoogle()"></select>
+  <button class="btn" onclick="addGoogleRow()"><i class="ti ti-plus"></i> Ajouter</button></div>
+  <div class="card">
+    <div class="card-title"><i class="ti ti-brand-google"></i> Résultats de recherche — mentions & détracteurs</div>
+    <div style="overflow-x:auto"><table class="tbl" id="googleTable">
+      <thead><tr><th>Entité / Requête</th><th>URL / Source</th><th>Type</th><th>Position</th><th>Tonalité</th><th>Observations</th><th></th></tr></thead>
+      <tbody id="googleBody"></tbody>
+    </table></div>
+    <p style="font-size:11px;color:var(--text3);margin-top:8px;font-style:italic">Cliquez sur une cellule pour éditer directement.</p>
+  </div>
+</div>
+
+<div id="geo" class="section">
+  <div class="period-sel"><label>Période :</label><select id="geoPeriode" onchange="renderGeo()"></select>
+  <button class="btn" onclick="addGeoRow()"><i class="ti ti-plus"></i> Ajouter</button></div>
+  <div class="card">
+    <div class="card-title"><i class="ti ti-robot"></i> Mentions dans les IA génératives (GEO)</div>
+    <div style="overflow-x:auto"><table class="tbl">
+      <thead><tr><th>Requête testée</th><th>Outil IA</th><th>Résumé réponse</th><th>Medispace cité ?</th><th>Tonalité</th><th></th></tr></thead>
+      <tbody id="geoBody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<div id="backlinks" class="section">
+  <div class="period-sel"><label>Période :</label><select id="blPeriode" onchange="renderBL()"></select>
+  <button class="btn" onclick="addBLRow()"><i class="ti ti-plus"></i> Ajouter</button></div>
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-label">Nouveaux domaines</div><div class="kpi-val" id="bl-new">—</div></div>
+    <div class="kpi"><div class="kpi-label">Domaines perdus</div><div class="kpi-val" id="bl-lost">—</div></div>
+    <div class="kpi"><div class="kpi-label">Liens toxiques</div><div class="kpi-val" id="bl-toxic">—</div></div>
+    <div class="kpi"><div class="kpi-label">Trust moyen</div><div class="kpi-val" id="bl-trust">—</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><i class="ti ti-link"></i> Suivi backlinks SE-Ranking</div>
+    <div style="overflow-x:auto"><table class="tbl">
+      <thead><tr><th>Domaine référent</th><th>URL source</th><th>Type</th><th>Trust</th><th>Statut</th><th></th></tr></thead>
+      <tbody id="blBody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<div id="mentions" class="section">
+  <div style="margin-bottom:10px"><button class="btn" onclick="addMentionRow()"><i class="ti ti-plus"></i> Ajouter un avis</button></div>
+  <div class="card">
+    <div class="card-title"><i class="ti ti-star"></i> Avis clients & mentions en ligne</div>
+    <div style="overflow-x:auto"><table class="tbl">
+      <thead><tr><th>Source</th><th>Plateforme</th><th>Extrait</th><th>Note</th><th>Tonalité</th><th>Date</th><th></th></tr></thead>
+      <tbody id="mentionBody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<div id="actions" class="section">
+  <div style="margin-bottom:10px"><button class="btn" onclick="addAction()"><i class="ti ti-plus"></i> Nouvelle action</button></div>
+  <div class="card">
+    <div class="card-title"><i class="ti ti-list-check"></i> Plan d'actions correctives</div>
+    <div id="actionsList" style="display:grid;gap:8px"></div>
+  </div>
+</div>
+</div>
+
+<script>
+const PERIODS=Array.from({length:12},(_,i)=>`P${i+1}`);
+let state={google:{},geo:{},bl:{},mentions:[],actions:[],synthese:{}};
+PERIODS.forEach(p=>{state.google[p]=[];state.geo[p]=[];state.bl[p]=[];state.synthese[p]={risque:'',detract:'',note:'',domaines:'',ia:''};});
+state.mentions=[{source:'Google My Business',platform:'Google',extrait:'',note:'4.2',ton:'Positif',date:''},{source:'Trustpilot',platform:'Trustpilot',extrait:'',note:'',ton:'Neutre',date:''}];
+state.actions=[{periode:'P1',probleme:'Article détracteur page 1',action:'Rédiger article de réponse SEO',resp:'Chargé Marketing',statut:'En cours'}];
+state.google['P1']=[{entite:'medispace-rh.fr',url:'https://www.medispace-rh.fr',type:'Site officiel',pos:'1',ton:'Positif',obs:''},{entite:'Medispace',url:'',type:'Détracteur',pos:'4',ton:'Négatif',obs:'Article forum'}];
+state.geo['P1']=[{requete:"Qu'est-ce que Medispace ?",outil:'ChatGPT',resume:'Présente comme logiciel santé travail',cite:'Oui',ton:'Positif'},{requete:'Logiciel médecine du travail',outil:'Gemini',resume:'Non mentionné',cite:'Non',ton:'Neutre'}];
+state.bl['P1']=[{domaine:'sante-travail.fr',url:'https://...',type:'DoFollow',trust:'42',statut:'Actif'},{domaine:'forum-rh.com',url:'',type:'NoFollow',trust:'18',statut:'Toxique'}];
+
+document.getElementById('lastUpdate').textContent=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+
+function sel(val,...opts){return `<select style="font-size:11px;padding:2px 4px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text)">${opts.map(o=>`<option ${o==val?'selected':''}>${o}</option>`).join('')}</select>`;}
+function ed(v){return `<td contenteditable="true" style="min-width:80px">${v||''}</td>`;}
+
+function buildSelects(){['periodeSelect','googlePeriode','geoPeriode','blPeriode'].forEach(id=>{const el=document.getElementById(id);if(!el)return;PERIODS.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;el.appendChild(o);});});}
+
+function renderGoogle(){
+  const p=document.getElementById('googlePeriode').value;
+  document.getElementById('googleBody').innerHTML=(state.google[p]||[]).map((r,i)=>`<tr>
+    ${ed(r.entite)}${ed(r.url)}
+    <td>${sel(r.type,'Site officiel','Détracteur','Avis','Mention presse')}</td>
+    ${ed(r.pos)}<td>${sel(r.ton,'Positif','Neutre','Négatif')}</td>${ed(r.obs)}
+    <td><button class="del-btn" onclick="state.google['${p}'].splice(${i},1);renderGoogle()"><i class="ti ti-trash"></i></button></td>
+  </tr>`).join('');
+}
+function addGoogleRow(){const p=document.getElementById('googlePeriode').value;state.google[p].push({entite:'',url:'',type:'Site officiel',pos:'',ton:'Neutre',obs:''});renderGoogle();}
+
+function renderGeo(){
+  const p=document.getElementById('geoPeriode').value;
+  document.getElementById('geoBody').innerHTML=(state.geo[p]||[]).map((r,i)=>`<tr>
+    ${ed(r.requete)}${ed(r.outil)}${ed(r.resume)}
+    <td>${sel(r.cite,'Oui','Non')}</td><td>${sel(r.ton,'Positif','Neutre','Négatif')}</td>
+    <td><button class="del-btn" onclick="state.geo['${p}'].splice(${i},1);renderGeo()"><i class="ti ti-trash"></i></button></td>
+  </tr>`).join('');
+}
+function addGeoRow(){const p=document.getElementById('geoPeriode').value;state.geo[p].push({requete:'',outil:'',resume:'',cite:'Non',ton:'Neutre'});renderGeo();}
+
+function renderBL(){
+  const p=document.getElementById('blPeriode').value;
+  const rows=state.bl[p]||[];
+  const tox=rows.filter(r=>r.statut==='Toxique').length;
+  document.getElementById('bl-new').textContent=rows.length;
+  document.getElementById('bl-lost').textContent='—';
+  document.getElementById('bl-toxic').textContent=tox;
+  const tr=rows.filter(r=>r.trust).map(r=>parseFloat(r.trust)).filter(n=>!isNaN(n));
+  document.getElementById('bl-trust').textContent=tr.length?Math.round(tr.reduce((a,b)=>a+b)/tr.length):'—';
+  document.getElementById('blBody').innerHTML=rows.map((r,i)=>`<tr>
+    ${ed(r.domaine)}${ed(r.url)}
+    <td>${sel(r.type,'DoFollow','NoFollow')}</td>${ed(r.trust)}
+    <td>${sel(r.statut,'Actif','Toxique','Perdu')}</td>
+    <td><button class="del-btn" onclick="state.bl['${p}'].splice(${i},1);renderBL()"><i class="ti ti-trash"></i></button></td>
+  </tr>`).join('');
+}
+function addBLRow(){const p=document.getElementById('blPeriode').value;state.bl[p].push({domaine:'',url:'',type:'DoFollow',trust:'',statut:'Actif'});renderBL();}
+
+function renderMentions(){
+  document.getElementById('mentionBody').innerHTML=state.mentions.map((r,i)=>`<tr>
+    ${ed(r.source)}${ed(r.platform)}${ed(r.extrait)}${ed(r.note)}
+    <td>${sel(r.ton,'Positif','Neutre','Négatif')}</td>${ed(r.date)}
+    <td><button class="del-btn" onclick="state.mentions.splice(${i},1);renderMentions()"><i class="ti ti-trash"></i></button></td>
+  </tr>`).join('');
+}
+function addMentionRow(){state.mentions.push({source:'',platform:'',extrait:'',note:'',ton:'Neutre',date:''});renderMentions();}
+
+function renderActions(){
+  document.getElementById('actionsList').innerHTML=state.actions.map((a,i)=>`
+    <div class="action-row">
+      <select onchange="state.actions[${i}].periode=this.value">${PERIODS.map(p=>`<option ${a.periode==p?'selected':''}>${p}</option>`).join('')}</select>
+      <input value="${a.probleme}" placeholder="Problème" oninput="state.actions[${i}].probleme=this.value">
+      <input value="${a.action}" placeholder="Action" oninput="state.actions[${i}].action=this.value">
+      <select onchange="state.actions[${i}].statut=this.value"><option ${a.statut=='À faire'?'selected':''}>À faire</option><option ${a.statut=='En cours'?'selected':''}>En cours</option><option ${a.statut=='Terminé'?'selected':''}>Terminé</option></select>
+      <button class="del-btn" onclick="state.actions.splice(${i},1);renderActions()"><i class="ti ti-trash"></i></button>
+    </div>`).join('');
+}
+function addAction(){state.actions.push({periode:'P1',probleme:'',action:'',resp:'',statut:'À faire'});renderActions();}
+
+function updateKpis(){
+  const p=document.getElementById('periodeSelect').value;
+  const s=state.synthese[p];
+  ['risque','detract','note','bl','ia'].forEach(k=>{ document.getElementById(`kpi-${k}-val`).textContent=s[k==='bl'?'domaines':k]||'—'; });
+}
+
+function showTab(id,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function exportCSV(){
+  let csv='Type,Entité,Détail,Tonalité,Période\n';
+  PERIODS.forEach(p=>{
+    (state.google[p]||[]).forEach(r=>{csv+=`Google,"${r.entite}","${r.url}",${r.ton},${p}\n`;});
+    (state.geo[p]||[]).forEach(r=>{csv+=`GEO/IA,"${r.requete}","${r.resume}",${r.ton},${p}\n`;});
+    (state.bl[p]||[]).forEach(r=>{csv+=`Backlink,"${r.domaine}","${r.url}",${r.statut},${p}\n`;});
+  });
+  state.mentions.forEach(r=>{csv+=`Avis,"${r.source}","${r.extrait}",${r.ton},—\n`;});
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='medispace_erep.csv';a.click();
+}
+
+let chartRisque,chartDetract;
+function initCharts(){
+  chartRisque=new Chart(document.getElementById('chartRisque'),{type:'line',data:{labels:PERIODS,datasets:[{label:'Risque',data:PERIODS.map(()=>null),borderColor:'#E24B4A',backgroundColor:'rgba(226,75,74,.08)',tension:.35,fill:true,spanGaps:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:10,ticks:{stepSize:2}},x:{grid:{display:false}}}}});
+  chartDetract=new Chart(document.getElementById('chartDetract'),{type:'bar',data:{labels:PERIODS,datasets:[{label:'Détracteurs',data:PERIODS.map(()=>null),backgroundColor:'#F09595',borderColor:'#E24B4A',borderWidth:0.5},{label:'Positives',data:PERIODS.map(()=>null),backgroundColor:'#9FE1CB',borderColor:'#1D9E75',borderWidth:0.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{beginAtZero:true}}}});
+}
+
+buildSelects();updateKpis();renderGoogle();renderGeo();renderBL();renderMentions();renderActions();initCharts();
+</script>
+</body>
+</html>
